@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeCMA Petty Cash - Pro Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#090E17',
+                        darkcard: '#161D2D',
+                        primary: '#3B82F6',
+                        accent: '#8B5CF6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase Cloud Storage & DB (v8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- html2pdf for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ExcelJS & FileSaver for advanced Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090E17;
+            color: #E2E8F0;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Dark Glassmorphism */
+        .glass-panel {
+            background: rgba(22, 29, 45, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            border-radius: 1.25rem;
+        }
+
+        .input-dark {
+            background: rgba(9, 14, 23, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            color: #F8FAFC;
+            transition: all 0.3s ease;
+        }
+
+        .input-dark:focus {
+            border-color: #3B82F6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+            background: rgba(9, 14, 23, 0.9);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Animations */
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.98) translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60A5FA, #A78BFA);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden antialiased selection:bg-blue-500/30 selection:text-blue-200">
+
+    <!-- Sidebar -->
+    <aside
+        class="w-72 bg-darkcard/80 backdrop-blur-xl border-r border-white/5 flex-shrink-0 hidden lg:flex flex-col z-20 shadow-2xl relative">
+        <!-- Glow Effect -->
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-blue-600/20 rounded-full blur-[60px] pointer-events-none">
+        </div>
+
+        <div class="p-8 pb-4 relative z-10">
+            <div class="flex items-center gap-3 mb-2">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-car-wrench text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">DeCMA</h1>
+                    <span class="text-blue-400 text-xs tracking-wider uppercase font-semibold">Repair Center</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 mt-2 z-10">
+            <button onclick="showSection('dashboard')" id="nav-dashboard"
+                class="w-full flex items-center gap-4 px-5 py-3.5 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-xl transition-all font-medium group ring-1 ring-transparent">
+                <i class="fa-solid fa-chart-pie w-5 text-lg group-hover:scale-110 transition-transform"></i> Dashboard
+            </button>
+            <button onclick="showSection('expenses')" id="nav-expenses"
+                class="w-full flex items-center gap-4 px-5 py-3.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-medium group">
+                <i class="fa-solid fa-receipt w-5 text-lg group-hover:scale-110 transition-transform"></i> Add Expense
+            </button>
+            <button onclick="showSection('reports')" id="nav-reports"
+                class="w-full flex items-center gap-4 px-5 py-3.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-medium group">
+                <i class="fa-solid fa-chart-line w-5 text-lg group-hover:scale-110 transition-transform"></i> Analytics
+                & Reports
+            </button>
+            <button onclick="showSection('settings')" id="nav-settings"
+                class="w-full flex items-center gap-4 px-5 py-3.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-medium group">
+                <i class="fa-solid fa-gear w-5 text-lg group-hover:scale-110 transition-transform"></i> Settings
+            </button>
+            <button onclick="showSection('billexport')" id="nav-billexport"
+                class="w-full flex items-center gap-4 px-5 py-3.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-medium group">
+                <i class="fa-solid fa-file-image w-5 text-lg group-hover:scale-110 transition-transform"></i> Export
+                Photos
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-white/5 z-10">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                    <i class="fa-solid fa-cloud text-blue-400 text-xs shadow-glow"></i>
+                </div>
+                <div class="text-xs">
+                    <p class="text-white font-medium">DeCMA Cloud</p>
+                    <p class="text-blue-400/80">Online Synced Mode</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Cloud Setup Warning Modal -->
+    <div id="firebase-setup-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl hidden">
+        <div class="glass-panel p-8 max-w-lg w-full mx-4 relative border-orange-500/30">
+            <div
+                class="w-16 h-16 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-3xl mx-auto mb-6">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center text-white mb-4">Cloud Database Not Configured!</h2>
+            <p class="text-slate-300 text-center mb-6 leading-relaxed">
+                To access your petty cash system from anywhere, you need to connect a free <b>Firebase Database</b>.
+            </p>
+            <div class="bg-black/30 p-4 rounded-xl mb-6 text-sm text-slate-400 border border-white/5 font-mono">
+                1. Go to <a href="https://console.firebase.google.com/" target="_blank"
+                    class="text-blue-400 underline">Firebase Console</a><br>
+                2. Create a Project & Add a Web App<br>
+                3. Create a <b>Firestore Database</b> (Test Mode)<br>
+                4. Copy the config and paste it into <span class="text-white">app.js</span>
+            </div>
+            <button onclick="document.getElementById('firebase-setup-modal').classList.add('hidden')"
+                class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-xl transition-colors">
+                I understand, let me test UI
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full relative overflow-y-auto no-scrollbar scroll-smooth">
+        <!-- Floating Header Glow -->
+        <div
+            class="absolute top-0 right-0 w-[500px] h-[300px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none z-0">
+        </div>
+
+        <!-- Mobile Header -->
+        <header
+            class="lg:hidden bg-darkcard/90 backdrop-blur-md border-b border-white/5 text-white p-4 flex justify-between items-center sticky top-0 z-40 shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-car-wrench text-sm"></i>
+                </div>
+                <h1 class="font-bold">DeCMA Repair</h1>
+            </div>
+            <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                class="text-slate-300 hover:text-white bg-white/5 p-2 rounded-lg border border-white/10">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </header>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu"
+            class="hidden lg:hidden bg-darkcard border-b border-white/5 absolute top-[65px] left-0 right-0 z-30 shadow-2xl">
+            <nav class="flex flex-col p-4 space-y-2">
+                <button
+                    onclick="showSection('dashboard'); document.getElementById('mobile-menu').classList.add('hidden')"
+                    class="text-left p-3 rounded-lg bg-white/5 text-white"><i
+                        class="fa-solid fa-chart-pie w-6 text-blue-400"></i> Dashboard</button>
+                <button
+                    onclick="showSection('expenses'); document.getElementById('mobile-menu').classList.add('hidden')"
+                    class="text-left p-3 rounded-lg hover:bg-white/5 text-slate-300"><i
+                        class="fa-solid fa-receipt w-6 text-emerald-400"></i> Expenses</button>
+                <button onclick="showSection('reports'); document.getElementById('mobile-menu').classList.add('hidden')"
+                    class="text-left p-3 rounded-lg hover:bg-white/5 text-slate-300"><i
+                        class="fa-solid fa-chart-line w-6 text-purple-400"></i> Reports</button>
+                <button
+                    onclick="showSection('settings'); document.getElementById('mobile-menu').classList.add('hidden')"
+                    class="text-left p-3 rounded-lg hover:bg-white/5 text-slate-300"><i
+                        class="fa-solid fa-gear w-6 text-orange-400"></i> Settings</button>
+                <button
+                    onclick="showSection('billexport'); document.getElementById('mobile-menu').classList.add('hidden')"
+                    class="text-left p-3 rounded-lg hover:bg-white/5 text-slate-300"><i
+                        class="fa-solid fa-file-image w-6 text-yellow-500"></i> Export Photos</button>
+            </nav>
+        </div>
+
+        <div class="px-4 py-8 md:px-10 max-w-[1400px] mx-auto w-full pb-24 relative z-10">
+
+            <!-- SECTION: DASHBOARD -->
+            <section id="sec-dashboard" class="block animate-fade">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Dashboard</h2>
+                        <p class="text-slate-400">View your petty cash balance and recent activity.</p>
+                    </div>
+                    <button onclick="showSection('expenses')"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.3)] font-medium transition-all flex items-center gap-2 transform hover:scale-105">
+                        <i class="fa-solid fa-plus-circle"></i> New Transaction
+                    </button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <!-- Total Fund -->
+                    <div class="glass-panel p-6 relative overflow-hidden group">
+                        <div
+                            class="absolute right-0 top-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:bg-blue-500/20 transition-colors">
+                        </div>
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Initial Cash</p>
+                            <div
+                                class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+                        <h3 id="display-total-fund" class="text-4xl font-bold text-white mb-2">Rs.0.00</h3>
+                        <div class="text-xs text-blue-400 font-medium">
+                            <button onclick="showSection('settings')" class="hover:underline flex items-center gap-1"><i
+                                    class="fa-solid fa-pen-to-square"></i> Change Limit</button>
+                        </div>
+                    </div>
+
+                    <!-- Total Spent -->
+                    <div class="glass-panel p-6 relative overflow-hidden group">
+                        <div
+                            class="absolute right-0 top-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:bg-orange-500/20 transition-colors">
+                        </div>
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Total Spent</p>
+                            <div
+                                class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/20">
+                                <i class="fa-solid fa-money-bill-transfer"></i>
+                            </div>
+                        </div>
+                        <h3 id="display-total-spent" class="text-4xl font-bold text-white mb-2">Rs.0.00</h3>
+                        <div class="text-xs text-slate-500 flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div> Lifetime Records
+                        </div>
+                    </div>
+
+                    <!-- Available Balance -->
+                    <div id="card-balance" class="glass-panel p-6 relative overflow-hidden group">
+                        <div
+                            class="absolute right-0 top-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:bg-emerald-500/20 transition-colors">
+                        </div>
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Available Balance
+                            </p>
+                            <div id="icon-balance"
+                                class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                                <i class="fa-solid fa-piggy-bank"></i>
+                            </div>
+                        </div>
+                        <h3 id="display-balance" class="text-4xl font-bold text-emerald-400 mb-2">Rs.0.00</h3>
+                        <div id="balance-alert-msg"
+                            class="text-xs font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 inline-block px-3 py-1.5 rounded-md">
+                            Status: Healthy
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Analytics Chart Minimal -->
+                    <div class="glass-panel p-6 lg:col-span-1 flex flex-col items-center justify-center">
+                        <h3 class="text-lg font-bold text-white w-full mb-6">Spend by Category</h3>
+                        <div class="relative w-[200px] h-[200px]">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div id="chart-legend" class="w-full mt-6 space-y-3">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="glass-panel flex flex-col lg:col-span-2 overflow-hidden">
+                        <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2"><i
+                                    class="fa-solid fa-clock-rotate-left text-blue-500"></i> Recent Activity</h3>
+                            <button onclick="showSection('reports')"
+                                class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">View All
+                                &rarr;</button>
+                        </div>
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead
+                                    class="bg-black/20 text-slate-400 border-b border-white/5 uppercase text-xs font-semibold tracking-wider">
+                                    <tr>
+                                        <th class="px-5 py-4 w-12 text-center">Bill</th>
+                                        <th class="px-6 py-4">Date</th>
+                                        <th class="px-6 py-4">Shop & Vehicle</th>
+                                        <th class="px-6 py-4">Transaction</th>
+                                        <th class="px-6 py-4 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-transactions-body" class="divide-y divide-white/5">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: EXPENSES (ADD/EDIT) -->
+            <section id="sec-expenses" class="hidden animate-fade">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-bold text-white mb-2">Add <span class="gradient-text">New Expense</span>
+                    </h2>
+                    <p class="text-slate-400">Record a new payment for spares or services.</p>
+                </div>
+
+                <div class="glass-panel p-6 md:p-8 max-w-3xl border border-blue-500/20 relative overflow-hidden">
+                    <div
+                        class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none">
+                    </div>
+
+                    <form id="expense-form" class="space-y-6 relative z-10">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            <!-- Shop Name -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Shop / Supplier Name <span
+                                        class="text-red-400">*</span></label>
+                                <input type="text" id="exp-shop" list="shop-list" required
+                                    placeholder="e.g. Perera Hardware"
+                                    class="input-dark w-full px-4 py-3 rounded-xl placeholder-slate-600 transition-all font-medium">
+                            </div>
+
+                            <!-- Vehicle No -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Vehicle Reg. No</label>
+                                <input type="text" id="exp-vehicle" list="vehicle-list" placeholder="e.g. WP CAA-1234"
+                                    class="input-dark w-full px-4 py-3 rounded-xl placeholder-slate-600 uppercase transition-all font-medium font-mono">
+                            </div>
+
+                            <!-- Date -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Date <span
+                                        class="text-red-400">*</span></label>
+                                <input type="date" id="exp-date" required
+                                    class="input-dark w-full px-4 py-3 rounded-xl">
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Category <span
+                                        class="text-red-400">*</span></label>
+                                <select id="exp-category" required
+                                    class="input-dark w-full px-4 py-3 rounded-xl appearance-none">
+                                    <option value="" disabled selected>Select Category...</option>
+                                    <option value="Spares" class="bg-darkcard text-white">⚙️ Spares</option>
+                                    <option value="External Service" class="bg-darkcard text-white">🔧 External Service
+                                    </option>
+                                    <option value="Mechanical Maintenance" class="bg-darkcard text-white">🧰 Mechanical
+                                        Maintenance</option>
+                                    <option value="Courier" class="bg-darkcard text-white">📦 Courier</option>
+                                    <option value="Office Items" class="bg-darkcard text-white">🗂️ Office Items
+                                    </option>
+                                    <option value="Employee Welfare" class="bg-darkcard text-white">☕ Employee Welfare
+                                    </option>
+                                    <option value="Others" class="bg-darkcard text-white">📝 Others</option>
+                                </select>
+                            </div>
+
+                            <!-- Amount -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Amount (Rs.) <span
+                                        class="text-red-400">*</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <span class="text-slate-500 font-semibold">Rs.</span>
+                                    </div>
+                                    <input type="number" id="exp-amount" required min="0" step="0.01" placeholder="0.00"
+                                        class="input-dark w-full pl-12 pr-4 py-3 rounded-xl">
+                                </div>
+                            </div>
+
+                            <!-- Bill Reference -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Bill / Inv Ref
+                                    No.</label>
+                                <input type="text" id="exp-billref" placeholder="Optional"
+                                    class="input-dark w-full px-4 py-3 rounded-xl">
+                            </div>
+
+                            <!-- Bill Image -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Attach Bill Image <span
+                                        class="text-xs text-slate-500">(<1MB)< /span></label>
+                                <div class="relative w-full">
+                                    <input type="file" id="exp-billimage" accept="image/*" capture="environment"
+                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        onchange="document.getElementById('file-name').innerText = this.files[0] ? this.files[0].name : 'No file chosen'">
+                                    <div
+                                        class="input-dark w-full px-4 py-3 rounded-xl flex items-center justify-between pointer-events-none">
+                                        <span id="file-name" class="text-slate-400 truncate w-3/4">Take bill
+                                            photo...</span>
+                                        <i class="fa-solid fa-camera text-blue-400"></i>
+                                    </div>
+                                </div>
+                                <p id="img-error" class="text-red-400 text-xs mt-2 hidden"><i
+                                        class="fa-solid fa-triangle-exclamation"></i> Image size must be less than
+                                    1MB
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                            <textarea id="exp-desc" rows="3"
+                                placeholder="What parts were bought or what service was done?"
+                                class="input-dark w-full px-4 py-3 rounded-xl resize-none"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-4 pt-6 border-t border-white/5">
+                            <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-semibold shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all flex items-center gap-2 transform hover:-translate-y-1">
+                                <i class="fa-solid fa-check-double"></i> Save Expense
+                            </button>
+                            <button type="button"
+                                onclick="document.getElementById('expense-form').reset(); document.getElementById('file-name').innerText='Upload photo...'; document.getElementById('img-error').classList.add('hidden');"
+                                class="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-6 py-3.5 rounded-xl font-medium transition-all">
+                                Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECTION: REPORTS & HISTORY -->
+            <section id="sec-reports" class="hidden animate-fade">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Data <span class="gradient-text">Analytics</span>
+                        </h2>
+                        <p class="text-slate-400">Search, filter, and export transaction history.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="exportToExcel()"
+                            class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-medium">
+                            <i class="fa-solid fa-file-excel"></i> Export to Excel
+                        </button>
+                        <button onclick="exportToPDF()"
+                            class="bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600 hover:text-white px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-medium">
+                            <i class="fa-solid fa-file-pdf"></i> Export to PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div
+                    class="glass-panel p-5 rounded-xl mb-6 flex flex-col md:flex-row gap-4 items-end border border-white/10 z-20 relative">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Search
+                            Vehicle / Shop</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-500"></i>
+                            <input type="text" id="filter-search" placeholder="Type here..."
+                                class="input-dark w-full pl-11 pr-4 py-2.5 rounded-xl uppercase">
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/4">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category
+                            Filter</label>
+                        <select id="filter-category"
+                            class="input-dark w-full px-4 py-2.5 rounded-xl appearance-none bg-darkcard">
+                            <option value="all">All Categories</option>
+                            <option value="Spares">Spares</option>
+                            <option value="External Service">External Service</option>
+                            <option value="Mechanical Maintenance">Mechanical Maintenance</option>
+                            <option value="Courier">Courier</option>
+                            <option value="Office Items">Office Items</option>
+                            <option value="Employee Welfare">Employee Welfare</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-1/4">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Report
+                            Date
+                            Filter</label>
+                        <input type="date" id="filter-date"
+                            class="input-dark w-full px-4 py-2.5 rounded-xl color-scheme-dark">
+                    </div>
+                    <div class="w-full md:w-auto flex gap-3 h-[46px]">
+                        <button onclick="applyFilters()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-xl transition-all font-medium h-full flex items-center gap-2 flex-1 md:flex-none justify-center">
+                            <i class="fa-solid fa-filter"></i> Apply
+                        </button>
+                        <button onclick="resetFilters()"
+                            class="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 rounded-xl transition-all h-full flex items-center justify-center group"
+                            title="Reset Filters">
+                            <i
+                                class="fa-solid fa-rotate-right group-hover:-rotate-180 transition-transform duration-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div id="print-area" class="glass-panel rounded-xl overflow-hidden relative">
+                    <div class="p-8 border-b border-black hidden print-header text-black bg-white">
+                        <div class="flex items-center gap-4 mb-4">
+                            <i class="fa-solid fa-car-wrench text-3xl"></i>
+                            <div>
+                                <h2 class="text-2xl font-bold uppercase tracking-wider">DeCMA Workshop</h2>
+                                <h3 class="text-lg text-slate-600">Official Petty Cash Expense Log</h3>
+                            </div>
+                        </div>
+                        <p id="print-date-range" class="text-sm border-t border-slate-200 pt-2 font-mono"></p>
+                    </div>
+                    <div class="overflow-x-auto min-h-[300px]">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead
+                                class="bg-black/40 text-slate-300 border-b border-white/5 uppercase text-xs font-bold tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-5">Date</th>
+                                    <th class="px-6 py-5">Shop & Vehicle</th>
+                                    <th class="px-6 py-5">Category</th>
+                                    <th class="px-6 py-5 max-w-xs">Notes</th>
+                                    <th class="px-6 py-5 text-right font-mono text-white">Amount (Rs)</th>
+                                    <th class="px-6 py-5 text-center action-col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-white/5 text-slate-300">
+                                <!-- Populated by JS -->
+                            </tbody>
+                            <tfoot class="bg-blue-900/20 border-t border-blue-500/20 font-bold backdrop-blur-md">
+                                <tr>
+                                    <td colspan="4"
+                                        class="px-6 py-5 text-right uppercase text-xs tracking-wider text-blue-300">
+                                        Total Expenses:</td>
+                                    <td id="filtered-total"
+                                        class="px-6 py-5 text-right text-lg text-white font-mono shadow-sm">0.00</td>
+                                    <td class="action-col"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: SETTINGS -->
+            <section id="sec-settings" class="hidden animate-fade">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-bold text-white mb-2"><span class="gradient-text">Settings</span>
+                    </h2>
+                    <p class="text-slate-400">Manage cash limits and system data.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Config -->
+                    <div class="glass-panel p-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
+                        <div class="flex items-center gap-3 mb-8 pb-4 border-b border-white/10 relative z-10">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">Petty Cash Limit</h3>
+                        </div>
+
+                        <div class="space-y-6 relative z-10">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Initial Cash Limit
+                                    (Rs.)</label>
+                                <input type="number" id="setting-fund"
+                                    class="input-dark w-full px-4 py-3 rounded-xl font-mono text-lg">
+                                <p class="text-xs text-slate-500 mt-2">The total petty cash received at the beginning.
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Warning Threshold
+                                    (Rs.)</label>
+                                <input type="number" id="setting-threshold"
+                                    class="input-dark w-full px-4 py-3 rounded-xl font-mono text-lg">
+                                <p class="text-xs text-slate-500 mt-2">Dashboard will alert when balance falls below
+                                    this.</p>
+                            </div>
+                            <button onclick="saveSettings()"
+                                class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3.5 rounded-xl font-semibold shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all w-full flex items-center justify-center gap-2 mt-4">
+                                <i class="fa-solid fa-save"></i> Save System Limit
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="glass-panel p-8 border border-red-500/20 relative overflow-hidden bg-red-950/20">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl"></div>
+                        <div class="flex items-center gap-3 mb-8 pb-4 border-b border-red-500/20 relative z-10">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500">
+                                <i class="fa-solid fa-skull-crossbones"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-red-400">Reset System</h3>
+                        </div>
+
+                        <div class="relative z-10">
+                            <p class="text-slate-300 mb-6 leading-relaxed">Resetting the system will delete all <strong
+                                    class="text-white">expenses</strong> and <strong class="text-white">bill
+                                    images</strong> forever. Please export reports to Excel or PDF first.</p>
+
+                            <button onclick="clearDatabase()"
+                                class="bg-red-600/20 hover:bg-red-600 border border-red-500/50 text-red-400 hover:text-white px-6 py-3.5 rounded-xl font-bold transition-all w-full flex items-center justify-center gap-2 group">
+                                <i class="fa-solid fa-fire group-hover:scale-125 transition-transform"></i> Delete All
+                                Records
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Data Backup -->
+                    <div
+                        class="glass-panel p-8 border border-emerald-500/20 relative overflow-hidden bg-emerald-950/20 lg:col-span-2">
+                        <div class="absolute top-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                        <div class="flex items-center gap-3 mb-8 pb-4 border-b border-emerald-500/20 relative z-10">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-emerald-400">Database Backup</h3>
+                        </div>
+
+                        <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center justify-between">
+                            <p class="text-slate-300 leading-relaxed md:w-2/3">Download a complete backup of your
+                                database. This includes all expense records, bill images, and system settings. Keep this
+                                file safe locally.</p>
+
+                            <button onclick="backupDatabase()"
+                                class="bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/50 text-emerald-400 hover:text-white px-8 py-3.5 rounded-xl font-bold transition-all w-full md:w-auto whitespace-nowrap flex items-center justify-center gap-2 group">
+                                <i class="fa-solid fa-download group-hover:-translate-y-1 transition-transform"></i>
+                                Download Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: BILL EXPORT -->
+            <section id="sec-billexport" class="hidden animate-fade">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-bold text-white mb-2">Export <span class="gradient-text">Photos</span>
+                    </h2>
+                    <p class="text-slate-400">Generate a PDF containing all uploaded bill photos up to a specific date.
+                    </p>
+                </div>
+
+                <div class="glass-panel p-8 relative overflow-hidden max-w-2xl border border-yellow-500/20">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl"></div>
+                    <div class="flex items-center gap-3 mb-8 pb-4 border-b border-white/10 relative z-10">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Generate Receipt PDF</h3>
+                    </div>
+
+                    <div class="space-y-6 relative z-10">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Select Date for Export</label>
+                            <input type="date" id="bill-filter-date"
+                                class="input-dark w-full px-4 py-3 rounded-xl color-scheme-dark">
+                            <p class="text-xs text-slate-500 mt-2">Leave blank to export all time records.</p>
+                        </div>
+
+                        <button onclick="exportBillsPDF()"
+                            class="bg-yellow-600 hover:bg-yellow-500 text-white px-6 py-3.5 rounded-xl font-semibold shadow-[0_0_20px_rgba(202,138,4,0.2)] transition-all w-full flex items-center justify-center gap-2 mt-4">
+                            <i class="fa-solid fa-arrow-down"></i> Download PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Detailed Image Modal -->
+    <div id="image-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute top-6 right-6 flex gap-4">
+            <a id="download-img-btn" href="#" download="bill_image"
+                class="w-12 h-12 rounded-full bg-white/10 hover:bg-blue-600 text-white flex items-center justify-center transition-all backdrop-blur text-xl"><i
+                    class="fa-solid fa-download"></i></a>
+            <button onclick="closeImageModal()"
+                class="w-12 h-12 rounded-full bg-white/10 hover:bg-red-600 text-white flex items-center justify-center transition-all backdrop-blur text-xl"><i
+                    class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="relative w-full max-w-5xl mx-4 max-h-[90vh] flex justify-center p-2">
+            <img id="modal-img" src="" alt="Scanned Document"
+                class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10">
+        </div>
+    </div>
+
+    <!-- Enhanced Toast Custom Notification -->
+    <div id="toast"
+        class="fixed bottom-6 right-6 z-[60] transform translate-y-24 opacity-0 transition-all duration-400 flex items-start gap-4 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-l-4 backdrop-blur-md min-w-[300px]"
+        style="background: rgba(15,23,42,0.9);">
+        <div id="toast-icon-wrapper" class="w-8 h-8 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+            <i id="toast-icon" class="fa-solid fa-check text-white text-sm"></i>
+        </div>
+        <div class="flex-1">
+            <h4 id="toast-title" class="font-bold text-white text-sm mb-0.5">Notification</h4>
+            <p id="toast-msg" class="text-xs text-slate-300 leading-tight">System updated</p>
+        </div>
+        <button
+            onclick="document.getElementById('toast').classList.replace('translate-y-0', 'translate-y-24'); document.getElementById('toast').classList.replace('opacity-100', 'opacity-0');"
+            class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    </div>
+
+    <!-- Datalists for Auto-suggestions -->
+    <datalist id="shop-list"></datalist>
+    <datalist id="vehicle-list"></datalist>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -253,7 +253,7 @@ async function handleAddExpense(e) {
             category: document.getElementById('exp-category').value,
             amount: parseFloat(document.getElementById('exp-amount').value),
             billRef: document.getElementById('exp-billref').value.trim() || 'N/A',
-            description: document.getElementById('exp-desc').value.trim() || 'No description provided',
+            description: 'No description provided',
             billImage: base64Image,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
@@ -525,10 +525,6 @@ async function loadHistory(expenses = null) {
                     <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
                         ${exp.category}
                     </span>
-                </td>
-                <td class="px-6 py-5">
-                    <p class="text-[11px] text-slate-300 truncate max-w-[200px]" title="${exp.description}">${exp.description}</p>
-                    <p class="text-[10px] text-slate-500 font-mono mt-1"><i class="fa-solid fa-hashtag text-[8px]"></i> Ref: ${exp.billRef}</p>
                 </td>
                 <td class="px-6 py-5 font-mono font-bold text-[14px] text-white text-right whitespace-nowrap">Rs. ${formatCurrency(exp.amount)}</td>
                 <td class="px-6 py-5 action-col text-center whitespace-nowrap">
@@ -939,18 +935,59 @@ async function exportToExcel() {
         totalRow.getCell('desc').alignment = { horizontal: 'right', vertical: 'middle' };
         totalRow.getCell('desc').font = { bold: true };
 
+        // Summary Table (Right Aligned)
+        sheet.addRow([]);
+        sheet.addRow([]);
+
+        const summaryData = [
+            { label: 'Total Spare parts -', value: sums['Spares'] },
+            { label: 'Total External services -', value: sums['External Service'] },
+            { label: 'Total mechanical Maintainance -', value: sums['Mechanical Maintenance'] },
+            { label: 'Total Office items -', value: sums['Office Items'] },
+            { label: 'Total Employee Welfare -', value: sums['Employee Welfare'] },
+            { label: 'Courier -', value: sums['Courier'] },
+            { label: 'Others -', value: sums['Others'] },
+            { label: 'Total expenses -', value: sumAmount, isTotal: true }
+        ];
+
+        summaryData.forEach(item => {
+            const row = sheet.addRow([]);
+            sheet.mergeCells(row.number, 11, row.number, 13);
+            const labelCell = row.getCell(11);
+            const valueCell = row.getCell(14);
+
+            labelCell.value = item.label;
+            valueCell.value = item.value || 0;
+            labelCell.alignment = { horizontal: 'right', vertical: 'middle' };
+            labelCell.font = { bold: item.isTotal };
+
+            valueCell.alignment = { horizontal: 'right', vertical: 'middle' };
+            valueCell.numFmt = '#,##0.00';
+            valueCell.font = { bold: item.isTotal };
+
+            if (item.isTotal) {
+                valueCell.border = { top: { style: 'thin' }, bottom: { style: 'double' } };
+            }
+        });
+
         // Signature Rows
         sheet.addRow([]);
         sheet.addRow([]);
-        const sigRow = sheet.addRow([
-            '', 'Prepared By: ..........................',
-            '', '', '', 'Checked By: ..........................',
-            '', '', '', '', '', 'Approved By: ..........................'
-        ]);
+        sheet.addRow([]);
 
-        sigRow.getCell(2).font = { bold: true };
-        sigRow.getCell(6).font = { bold: true };
-        sigRow.getCell(12).font = { bold: true };
+        const sigRow1 = sheet.addRow([]);
+        const sigRow2 = sheet.addRow([]);
+
+        const sigCols = [2, 5, 8, 11, 14];
+        const sigLabels = ['Prepared By', 'Checked By', 'Certified By', 'Recommended By', 'Approved By'];
+
+        sigCols.forEach((col, idx) => {
+            sigRow1.getCell(col).value = '...............................';
+            sigRow1.getCell(col).alignment = { horizontal: 'center' };
+            sigRow2.getCell(col).value = sigLabels[idx];
+            sigRow2.getCell(col).alignment = { horizontal: 'center' };
+            sigRow2.getCell(col).font = { bold: true };
+        });
 
         // Save file
         const buffer = await workbook.xlsx.writeBuffer();

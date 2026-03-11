@@ -424,21 +424,36 @@
                             <div class="col-span-1">
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Category <span
                                         class="text-red-400">*</span></label>
-                                <select id="exp-category" required
+                                <select id="exp-category" required onchange="checkCategory()"
                                     class="input-dark w-full px-4 py-3 rounded-xl appearance-none">
                                     <option value="" disabled selected>Select Category...</option>
-                                    <option value="Spares" class="bg-darkcard text-white">⚙️ Spares</option>
-                                    <option value="External Service" class="bg-darkcard text-white">🔧 External Service
-                                    </option>
-                                    <option value="Mechanical Maintenance" class="bg-darkcard text-white">🧰 Mechanical
+                                    <option value="Spare parts" class="bg-darkcard text-white">⚙️ Spare parts</option>
+                                    <option value="Services" class="bg-darkcard text-white">🔧 Services</option>
+                                    <option value="Mechanical maintenance" class="bg-darkcard text-white">🧰 Mechanical
                                         Maintenance</option>
-                                    <option value="Courier" class="bg-darkcard text-white">📦 Courier</option>
-                                    <option value="Office Items" class="bg-darkcard text-white">🗂️ Office Items
+                                    <option value="Transport" class="bg-darkcard text-white">🚛 Transport</option>
+                                    <option value="Office items" class="bg-darkcard text-white">🗂️ Office items
                                     </option>
-                                    <option value="Employee Welfare" class="bg-darkcard text-white">☕ Employee Welfare
+                                    <option value="Employee welfare" class="bg-darkcard text-white">☕ Employee welfare
                                     </option>
-                                    <option value="Others" class="bg-darkcard text-white">📝 Others</option>
+                                    <option value="Other" class="bg-darkcard text-white">📝 Other</option>
                                 </select>
+                            </div>
+
+                            <!-- Internal/External Toggle -->
+                            <div id="type-toggle-container" class="col-span-1 hidden animate-fade">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Scope / Type</label>
+                                <div class="flex bg-black/40 p-1 rounded-xl border border-white/10 h-[50px]">
+                                    <button type="button" id="toggle-internal" onclick="setTransactionType('internal')"
+                                        class="flex-1 py-1 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-lg">
+                                        INTERNAL
+                                    </button>
+                                    <button type="button" id="toggle-external" onclick="setTransactionType('External')"
+                                        class="flex-1 py-1 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+                                        EXTERNAL
+                                    </button>
+                                </div>
+                                <input type="hidden" id="exp-type" value="internal">
                             </div>
 
                             <!-- Amount -->
@@ -538,13 +553,15 @@
                         <select id="filter-category"
                             class="input-dark w-full px-4 py-2.5 rounded-xl appearance-none bg-darkcard">
                             <option value="all">All Categories</option>
-                            <option value="Spares">Spares</option>
-                            <option value="External Service">External Service</option>
-                            <option value="Mechanical Maintenance">Mechanical Maintenance</option>
-                            <option value="Courier">Courier</option>
-                            <option value="Office Items">Office Items</option>
-                            <option value="Employee Welfare">Employee Welfare</option>
-                            <option value="Others">Others</option>
+                            <option value="Spare parts (internal)">Spare parts (internal)</option>
+                            <option value="Spare parts (External)">Spare parts (External)</option>
+                            <option value="Services (internal)">Services (internal)</option>
+                            <option value="Services (External)">Services (External)</option>
+                            <option value="Mechanical maintenance">Mechanical maintenance</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Office items">Office items</option>
+                            <option value="Employee welfare">Employee welfare</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div class="w-full md:w-1/4">
@@ -786,3 +803,4 @@
 </body>
 
 </html>
+Get
